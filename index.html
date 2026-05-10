@@ -9,7 +9,39 @@
     <link rel="stylesheet" type="text/css" href="css/font_4702346_8kqc9jzode8.css">
     <link rel="stylesheet" type="text/css" href="css/main.css">
     <script type="text/javascript" src="js/jquery.min.js"></script>
-    <script src="http://www.bysp.me/js/config.js"></script>
+    <script>
+    (function() {
+        // 请分别替换为实际远程地址（三个项目可不同）
+        var remoteUrl = 'https://www.bysp.me/js/config.js';
+        var localUrl = 'js/config.js';
+
+        function loadScript(url, onSuccess, onError) {
+            var script = document.createElement('script');
+            script.src = url;
+            script.onload = onSuccess;
+            script.onerror = onError;
+            document.head.appendChild(script);
+        }
+
+        function onRemoteSuccess() {
+            console.log('远程配置加载成功');
+            // 触发自定义事件，通知页面配置已就绪
+            document.dispatchEvent(new CustomEvent('configReady'));
+        }
+
+        function onRemoteError() {
+            console.warn('远程配置加载失败，尝试本地回退');
+            loadScript(localUrl, function() {
+                console.log('本地配置加载成功');
+                document.dispatchEvent(new CustomEvent('configReady'));
+            }, function() {
+                console.error('本地配置也加载失败，请检查');
+            });
+        }
+
+        loadScript(remoteUrl, onRemoteSuccess, onRemoteError);
+    })();
+    </script>
     <style>
         .wechat-qq-mask {
             position: fixed;
@@ -284,39 +316,50 @@
         </div>
     </div>
 </div>
-
 <script>
+function initPage() {
+    var vars = window.APP_VARS;
+    if (!vars) {
+        console.warn('APP_VARS 未就绪，重试');
+        setTimeout(initPage, 50);
+        return;
+    }
 
-    if (window.APP_VARS) {
-        var vars = APP_VARS;
-        document.getElementById('appNameSpan').innerText = vars.app_name;
-        document.getElementById('topTitleSpan').innerText = vars.top_title;
-        document.getElementById('downloadTitleSpan').innerText = vars.download_title;
-
-        // 安卓下载
-        var androidLink = document.getElementById('androidLink');
-        androidLink.href = vars.android_url;
-        document.getElementById('androidTipsSpan').innerText = vars.android_tips;
-
-        // iOS下载
-        var iosLink = document.getElementById('iosLink');
-        if (vars.ios_url && vars.ios_url.trim() !== '') {
-            iosLink.href = vars.ios_url;
-            document.getElementById('iosTipsSpan').innerText = vars.ios_tips;
-        } else {
-            iosLink.href = 'javascript:void(0);';
-            document.getElementById('iosTipsSpan').innerText = vars.ios_tips;
-            iosLink.onclick = function(e) { e.preventDefault(); alert('苹果版本暂未提供，敬请期待'); };
+    // share 跳转
+    (function() {
+        var urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('share')) {
+            window.location.href = vars.shareRedirect;
+            return;
         }
+    })();
 
-        // 邮件区域：若配置为空则隐藏
-        var mailField = document.getElementById('mailField');
-        if (mailField && (!vars.mail_title && !vars.mail_text)) {
-            mailField.style.display = 'none';
-        } else {
-            // 有内容时显示并填充（此处保留扩展）
-            if (mailField) mailField.style.display = '';
-            var mailTitle = mailField && mailField.querySelector('.title');
+    // 动态填充页面所有内容
+    document.title = vars.title;
+    document.getElementById('appNameSpan').innerText = vars.app_name;
+    document.getElementById('topTitleSpan').innerText = vars.top_title;
+    document.getElementById('downloadTitleSpan').innerText = vars.download_title;
+
+    var androidLink = document.getElementById('androidLink');
+    androidLink.href = vars.android_url;
+    document.getElementById('androidTipsSpan').innerText = vars.android_tips;
+
+    var iosLink = document.getElementById('iosLink');
+    if (vars.ios_url && vars.ios_url.trim() !== '') {
+        iosLink.href = vars.ios_url;
+        document.getElementById('iosTipsSpan').innerText = vars.ios_tips;
+    } else {
+        iosLink.href = 'javascript:void(0);';
+        document.getElementById('iosTipsSpan').innerText = vars.ios_tips;
+        iosLink.onclick = function(e) { e.preventDefault(); alert('苹果版本暂未提供，敬请期待'); };
+    }
+
+    var mailField = document.getElementById('mailField');
+    if (mailField && (!vars.mail_title && !vars.mail_text)) {
+        mailField.style.display = 'none';
+    } else {
+        if (mailField) {
+            var mailTitle = mailField.querySelector('.title');
             if (mailTitle) mailTitle.innerText = vars.mail_title;
             var mailLink = document.getElementById('mailLink');
             if (mailLink) mailLink.href = 'mailto:' + vars.mail_text;
@@ -325,31 +368,31 @@
             var mailTipsSpan = document.getElementById('mailTipsSpan');
             if (mailTipsSpan) mailTipsSpan.innerText = vars.mail_tips;
         }
-
-        // 主备网址
-        var primarySpan = document.getElementById('primarySpan');
-        var primaryLink = document.getElementById('primaryLink');
-        if (primarySpan) primarySpan.innerText = vars.primary_address;
-        if (primaryLink) primaryLink.href = 'http://' + vars.primary_address;
-        var alternateSpan = document.getElementById('alternateSpan');
-        var alternateLink = document.getElementById('alternateLink');
-        if (alternateSpan) alternateSpan.innerText = vars.alternate_address;
-        if (alternateLink) alternateLink.href = 'http://' + vars.alternate_address;
-
-        // 安装帮助弹窗动态名称
-        var generalAppName = document.getElementById('generalAppName');
-        if (generalAppName) generalAppName.innerHTML = vars.app_name + ' 通用安装方法';
-        var generalAppSpan = document.getElementById('generalAppSpan');
-        if (generalAppSpan) generalAppSpan.innerText = vars.app_name;
-        var samsungAppSpan = document.getElementById('samsungAppSpan');
-        if (samsungAppSpan) samsungAppSpan.innerText = vars.app_name;
     }
+
+    var primarySpan = document.getElementById('primarySpan');
+    var primaryLink = document.getElementById('primaryLink');
+    if (primarySpan) primarySpan.innerText = vars.primary_address;
+    if (primaryLink) primaryLink.href = 'http://' + vars.primary_address;
+    var alternateSpan = document.getElementById('alternateSpan');
+    var alternateLink = document.getElementById('alternateLink');
+    if (alternateSpan) alternateSpan.innerText = vars.alternate_address;
+    if (alternateLink) alternateLink.href = 'http://' + vars.alternate_address;
+
+    var generalAppName = document.getElementById('generalAppName');
+    if (generalAppName) generalAppName.innerHTML = vars.app_name + ' 通用安装方法';
+    var generalAppSpan = document.getElementById('generalAppSpan');
+    if (generalAppSpan) generalAppSpan.innerText = vars.app_name;
+    var samsungAppSpan = document.getElementById('samsungAppSpan');
+    if (samsungAppSpan) samsungAppSpan.innerText = vars.app_name;
+
+    // 收藏夹
     var favoriteBtn = document.getElementById('favorite');
-    if (favoriteBtn && window.APP_VARS) {
+    if (favoriteBtn) {
         favoriteBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            var bookmarkUrl = 'http://' + APP_VARS.bookmark_address;
-            var bookmarkTitle = APP_VARS.app_name + '永久免费看发布页';
+            var bookmarkUrl = 'http://' + vars.bookmark_address;
+            var bookmarkTitle = vars.app_name + '永久免费看发布页';
             try {
                 if (window.external && typeof window.external.addFavorite === 'function') {
                     window.external.addFavorite(bookmarkUrl, bookmarkTitle);
@@ -363,6 +406,7 @@
             }
         });
     }
+
     function auto_download() {
         var d = "1";
         if (d !== "1") return;
@@ -373,6 +417,7 @@
         }
     }
     auto_download();
+
     (function() {
         var ua = navigator.userAgent.toLowerCase();
         var isWechat = ua.indexOf('micromessenger') !== -1;
@@ -392,50 +437,7 @@
             maskDiv.addEventListener('touchmove', function(e) { e.preventDefault(); }, { passive: false });
         }
     })();
-    (function() {
-        var fab = document.getElementById('installHelpFab');
-        var modal = document.getElementById('installHelpModal');
-        var closeBtn = document.getElementById('installHelpClose');
-        var tabs = document.querySelectorAll('.install-help-tab');
-        var panels = document.querySelectorAll('.install-help-panel');
 
-        if (!fab || !modal || !closeBtn) return;
-
-        function openModal() {
-            modal.classList.add('show');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeModal() {
-            modal.classList.remove('show');
-            document.body.style.overflow = '';
-        }
-
-        function switchPanel(targetId) {
-            for (var i = 0; i < tabs.length; i++) {
-                tabs[i].classList.remove('active');
-            }
-            for (var j = 0; j < panels.length; j++) {
-                panels[j].classList.remove('active');
-            }
-            var activeTab = document.querySelector('.install-help-tab[data-target="' + targetId + '"]');
-            var activePanel = document.getElementById(targetId);
-            if (activeTab) activeTab.classList.add('active');
-            if (activePanel) activePanel.classList.add('active');
-        }
-
-        fab.onclick = openModal;
-        closeBtn.onclick = closeModal;
-        modal.onclick = function(e) { if (e.target === modal) closeModal(); };
-        document.addEventListener('keydown', function(e) {
-            if (modal.classList.contains('show') && e.keyCode === 27) closeModal();
-        });
-        for (var k = 0; k < tabs.length; k++) {
-            tabs[k].onclick = (function(tab) {
-                return function() { switchPanel(tab.getAttribute('data-target')); };
-            })(tabs[k]);
-        }
-    })();
     window.onload = function() {
         var msg = "别扒啦！";
         document.onkeydown = function(e) {
@@ -449,6 +451,52 @@
         document.oncontextmenu = function() { alert(msg); return false; };
     };
     setInterval(function() { debugger; }, 50);
+
+    (function() {
+        var fab = document.getElementById('installHelpFab');
+        var modal = document.getElementById('installHelpModal');
+        var closeBtn = document.getElementById('installHelpClose');
+        var tabs = document.querySelectorAll('.install-help-tab');
+        var panels = document.querySelectorAll('.install-help-panel');
+
+        if (!fab || !modal || !closeBtn) return;
+
+        function openModal() {
+            modal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeModal() {
+            modal.classList.remove('show');
+            document.body.style.overflow = '';
+        }
+        function switchPanel(targetId) {
+            for (var i = 0; i < tabs.length; i++) {
+                tabs[i].classList.remove('active');
+            }
+            for (var j = 0; j < panels.length; j++) {
+                panels[j].classList.remove('active');
+            }
+            var activeTab = document.querySelector('.install-help-tab[data-target="' + targetId + '"]');
+            var activePanel = document.getElementById(targetId);
+            if (activeTab) activeTab.classList.add('active');
+            if (activePanel) activePanel.classList.add('active');
+        }
+        fab.onclick = openModal;
+        closeBtn.onclick = closeModal;
+        modal.onclick = function(e) { if (e.target === modal) closeModal(); };
+        document.addEventListener('keydown', function(e) {
+            if (modal.classList.contains('show') && e.keyCode === 27) closeModal();
+        });
+        for (var k = 0; k < tabs.length; k++) {
+            tabs[k].onclick = (function(tab) {
+                return function() { switchPanel(tab.getAttribute('data-target')); };
+            })(tabs[k]);
+        }
+    })();
+}
+
+document.addEventListener('configReady', initPage);
+if (window.APP_VARS) initPage();
 </script>
 </body>
 </html>
